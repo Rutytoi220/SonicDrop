@@ -4,6 +4,8 @@ let mediaStream = null;
 let ggwaveModule = null;
 let ggwaveInstance = null;
 let audioProcessor = null;
+let isListening = false;
+let audioSource = null;
 
 const consoleDiv = document.getElementById('console');
 const startBtn = document.getElementById('start-btn');
@@ -58,44 +60,76 @@ let receivedChunks = [];
         if (recvProgress) recvProgress.style.width = "0%";
 let totalExpectedChunks = 0;
 
-startBtn.addEventListener('click', () => {
+startBtn.addEventListener('click', async () => {
+    if (isListening) {
+        // Stop listening
+        log("Stopping microphone...");
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+        }
+        if (audioSource) {
+            audioSource.disconnect();
+            audioSource = null;
+        }
+        if (audioProcessor) {
+            audioProcessor.disconnect();
+            // Don't destroy audio@rocessor completely, just disconnect it from the graph
+        }
+        
+        isListening = false;
+        startBtn.textContent = "Start Microphone";
+        startBtn.style.background = ""; // Restore default CSS
+        startBtn.classList.remove("pulse-active");
+        log("Audio stopped.");
+        return;
+    }
+
     log("Initializing ggwave...");
     
-    // The Emscripten Factory for the SINGLE_FILE=1 build
-    ggwave_factory().then(async function(module) {
-        ggwaveModule = module;
-        const parameters = module.getDefaultParameters();
-        ggwaveInstance = module.init(parameters); // Initialize the C++ instance
-        
+    if (!ggwaveModule) {
+        // The Emscripten Factory for the SINGLE_FILE=1 build
         try {
-            // [CRITICAL] Initialize AudioContext STRICTLY inside the onClick handler to comply with Apple's Autoplay policy
+            ggwaveModule = await ggwave_factory();
+            const parameters = ggwaveModule.getDefaultParameters();
+            ggwaveInstance = ggwaveModule.init(parameters); // Initialize the C++ instance
+        } catch (err) {
+            log("WASM Load Error: " + err);
+            console.error("WASM Load Error:", err);
+            return;
+        }
+    }
+        
+    try {
+        // [CRITICAL] Initialize AudioContext STRICTLY inside the onClick handler to comply with Apple's Autoplay policy
+        if (!audioContext) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             audioContext = new AudioContext({ sampleRate: 48000 });
-            
-            log(`AudioContext created (Sample Rate: ${audioContext.sampleRate}Hz)`);
-            
-            // [CRITICAL] Hardware Constraints for iOS
-            const constraints = {
-                audio: {
-                    echoCancellation: false,
-                    noiseSuppression: false,
-                    autoGainControl: false
-                }
-            };
-            if (micSelect && micSelect.value) {
-                constraints.audio.deviceId = { exact: micSelect.value };
+            log(`AudioContext created (Sample Rate: ${audioContext.sampleRate}Hx)`);
+        }
+        
+        // [CRITICAL] Hardware Constraints for iOS
+        const constraints = {
+            audio: {
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false
             }
-            
-            mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-            log("Microphone access granted (Hardware filters explicitly disabled).");
-            
-            const source = audioContext.createMediaStreamSource(mediaStream);
-            
-            // ScriptProcessorNode for parsing audio chunks
+        };
+        if (micSelect && micSelect.value) {
+            constraints.audio.deviceId = { exact: micSelect.value };
+        }
+        
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        log("Microphone access granted (Hardware filters explicitly disabled).");
+        
+        audioSource = audioContext.createMediaStreamSource(mediaStream);
+        
+        // ScriptProcessorNode for parsing audio chunks
+        if (!audioProcessor) {
             audioProcessor = audioContext.createScriptProcessor(1024, 1, 1);
             
             audioProcessor.onaudioprocess = function(e) {
-                if (ggwaveInstance === null || ggwaveModule === null) return;
+                if (ggwaveInstance === null || ggwaveModule === null || !isListening) return;
                 const inputData = e.inputBuffer.getChannelData(0);
                 
                 // ggwave requires Int8Array byte stream representation of Int16 samples
@@ -119,27 +153,23 @@ startBtn.addEventListener('click', () => {
                     handleIncomingData(text);
                 }
             };
-            
-            source.connect(audioProcessor);
-            // Connect processor to destination (required for Safari to fire onaudioprocess events)
-            audioProcessor.connect(audioContext.destination);
-            
-            log("Listening for incoming acoustic data...");
-            startBtn.disabled = true;
-            startBtn.textContent = "Audio Active";
-            startBtn.style.background = "#28a745";
-            sendBtn.disabled = false;
-            
-        } catch (err) {
-            log("Error initializing audio context: " + err);
         }
-    }).catch(function(err) {
-        log("WASM Load Error: " + err);
-        console.error("WASM Load Error:", err);
-    });
-});
-
-function handleIncomingData(text) {
+        
+        audioSource.connect(audioProcessor);
+        // Connect processor to destination (required for Safari to fire onaudioprocess events)
+        audioProcessor.connect(audioContext.destination);
+        
+        isListening = true;
+        log("Listening for incoming acoustic data...");
+        startBtn.textContent = "Stop Microphone";
+        startBtn.style.background = "#ef4444"; // Red color for stop
+        startBtn.classList.add("pulse-active");
+        sendBtn.disabled = false;
+        
+    } catch (err) {
+        log("Error initializing audio context: " + err);
+    }
+});function handleIncomingData(text) {
     // Regex to match [X/Y]header chunks
     const regex = /^\[(\d+)\/(\d+)\](.*)/;
     const match = text.match(regex);

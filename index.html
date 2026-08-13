@@ -3,38 +3,306 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Acoustic Transfer</title>
+    <title>SonicDrop | Acoustic File Transfer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; margin: 0; background-color: #121212; color: #ffffff; }
-        .container { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
-        button, input { padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #333; background: #222; color: white; }
-        button { background: #007aff; border: none; font-weight: bold; cursor: pointer; }
-        button:active { background: #0056b3; }
-        button:disabled { background: #555; cursor: not-allowed; }
-        #console { background: #000; padding: 15px; font-family: monospace; font-size: 14px; border-radius: 8px; min-height: 200px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; border: 1px solid #333; }
-        .header { text-align: center; margin-bottom: 10px; }
-        input[type="file"] { padding: 10px; background: #1a1a1a; }
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #2563eb;
+            --accent-green: #10b981;
+            --console-bg: rgba(15, 23, 42, 0.9);
+            --console-text: #4ade80;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: radial-gradient(circle at top right, #1e293b, var(--bg-color));
+            color: var(--text-main); 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .main-container { 
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        @media (min-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+        }
+
+        button { 
+            padding: 14px 20px; 
+            font-size: 16px; 
+            border-radius: 12px; 
+            border: none; 
+            background: var(--accent-blue); 
+            color: white; 
+            font-weight: 600; 
+            cursor: pointer; 
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        button:hover:not(:disabled) { 
+            background: var(--accent-blue-hover); 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled { 
+            background: #475569; 
+            color: #94a3b8;
+            cursor: not-allowed; 
+            box-shadow: none;
+        }
+
+        .pulse-active {
+            background: var(--accent-green) !important;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        input[type="text"] { 
+            padding: 14px; 
+            font-size: 16px; 
+            border-radius: 12px; 
+            border: 1px solid var(--card-border); 
+            background: rgba(0,0,0,0.2); 
+            color: white; 
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        /* Custom File Input Dropzone */
+        .file-dropzone {
+            border: 2px dashed var(--card-border);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            background: rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-dropzone:hover {
+            border-color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .file-dropzone input[type="file"] {
+            display: none;
+        }
+
+        .file-dropzone p {
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+
+        .file-dropzone svg {
+            width: 40px;
+            height: 40px;
+            fill: var(--text-muted);
+            margin-bottom: 10px;
+            transition: fill 0.3s ease;
+        }
+
+        .file-dropzone:hover svg {
+            fill: var(--accent-blue);
+        }
+
+        /* Terminal Console */
+        .console-wrapper {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            gap: 10px;
+        }
+        
+        .console-header {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        #console { 
+            background: var(--console-bg); 
+            padding: 20px; 
+            font-family: 'JetBrains Mono', monospace; 
+            font-size: 13px; 
+            border-radius: 12px; 
+            min-height: 250px; 
+            max-height: 400px; 
+            overflow-y: auto; 
+            white-space: pre-wrap; 
+            word-break: break-all; 
+            border: 1px solid #1e293b; 
+            color: var(--console-text);
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+            flex-grow: 1;
+        }
+        
+        /* Custom Scrollbar for console */
+        #console::-webkit-scrollbar { width: 8px; }
+        #console::-webkit-scrollbar-track { background: var(--console-bg); border-radius: 12px; }
+        #console::-webkit-scrollbar-thumb { background: #334155; border-radius: 12px; }
+        #console::-webkit-scrollbar-thumb:hover { background: #475569; }
+
     </style>
-    <!-- Load ggwave.js (local file downloaded previously) -->
     <script src="ggwave.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h2 class="header">Acoustic Web Client</h2>
-        <button id="start-btn">Start Audio (Microphone)</button>
+    <div class="header">
+        <h1>SonicDrop Web</h1>
+        <p>Acoustic Air-Gapped File Transfer</p>
+    </div>
+
+    <div class="main-container">
         
-        <hr style="border-color: #333; width: 100%;">
-        
-        <div style="display:flex; flex-direction: column; gap: 10px;">
-            <input type="file" id="file-input">
-            <input type="text" id="text-input" placeholder="Type a message (optional)...">
-            <button id="send-btn" disabled>Send Data</button>
+        <!-- RECEIVER CARD -->
+        <div class="glass-card">
+            <h2 class="card-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
+                Receiver
+            </h2>
+            
+            <button id="start-btn">Start Microphone</button>
+            
+            <div class="console-wrapper">
+                <div class="console-header">
+                    <span>Terminal</span>
+                    <span>ggwave-js</span>
+                </div>
+                <div id="console">Initializing... Waiting for WASM load.</div>
+            </div>
         </div>
-        
-        <h3>Receive Console</h3>
-        <div id="console">Initializing... Waiting for WASM load.</div>
+
+        <!-- TRANSMITTER CARD -->
+        <div class="glass-card">
+            <h2 class="card-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+                Transmitter
+            </h2>
+            
+            <!-- File Dropzone -->
+            <label class="file-dropzone" for="file-input">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+                <h4>Select a File to Send</h4>
+                <p id="file-name-display">No file selected (Max 2MB)</p>
+                <input type="file" id="file-input">
+            </label>
+
+            <!-- Text Input -->
+            <input type="text" id="text-input" placeholder="Or type a raw message...">
+            
+            <button id="send-btn" disabled>Encode & Transmit</button>
+        </div>
+
     </div>
     
+    <script>
+        // UX Script for file selection
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const fileName = e.target.files[0] ? e.target.files[0].name : "No file selected (Max 2MB)";
+            document.getElementById('file-name-display').textContent = fileName;
+        });
+
+        // Add a mutation observer to the start button to add the pulse class when it says "Audio Active"
+        const startBtnUx = document.getElementById('start-btn');
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'characterData' || mutation.type === 'childList') {
+                    if (startBtnUx.textContent.includes("Active")) {
+                        startBtnUx.classList.add('pulse-active');
+                    }
+                }
+            });
+        });
+        observer.observe(startBtnUx, { characterData: true, childList: true, subtree: true });
+    </script>
     <script src="app.js"></script>
 </body>
 </html>

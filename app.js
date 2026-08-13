@@ -11,6 +11,41 @@ const sendBtn = document.getElementById('send-btn');
 const textInput = document.getElementById('text-input');
 const fileInput = document.getElementById('file-input');
 
+const micSelect = document.getElementById("mic-select");
+const speakerSelect = document.getElementById("speaker-select");
+const recvStatus = document.getElementById("recv-status");
+const recvProgress = document.getElementById("recv-progress");
+const sendStatus = document.getElementById("send-status");
+
+// Enumerate devices on load
+async function populateDevices() {
+    try {
+        await navigator.mediaDevices.getUserMedia({ audio: true }); // Request permission first
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        
+        micSelect.innerHTML = "<option value=''>Default Microphone</option>";
+        speakerSelect.innerHTML = "<option value=''>Default Speaker</option>";
+        
+        devices.forEach(device => {
+            if (device.kind === "audioinput") {
+                const opt = document.createElement("option");
+                opt.value = device.deviceId;
+                opt.text = device.label || `Microphone ${micSelect.length}`;
+                micSelect.appendChild(opt);
+            } else if (device.kind === "audiooutput") {
+                const opt = document.createElement("option");
+                opt.value = device.deviceId;
+                opt.text = device.label || `Speaker ${speakerSelect.length}`;
+                speakerSelect.appendChild(opt);
+            }
+        });
+    } catch (err) {
+        log("Failed to enumerate devices: " + err);
+    }
+}
+populateDevices();
+
+
 function log(msg) {
     console.log(msg);
     consoleDiv.textContent += msg + '\n';
@@ -19,6 +54,8 @@ function log(msg) {
 
 // Chunk reassembly buffers
 let receivedChunks = [];
+        if (recvStatus) recvStatus.textContent = "Status: Idle";
+        if (recvProgress) recvProgress.style.width = "0%";
 let totalExpectedChunks = 0;
 
 startBtn.addEventListener('click', () => {
@@ -45,6 +82,9 @@ startBtn.addEventListener('click', () => {
                     autoGainControl: false
                 }
             };
+            if (micSelect && micSelect.value) {
+                constraints.audio.deviceId = { exact: micSelect.value };
+            }
             
             mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
             log("Microphone access granted (Hardware filters explicitly disabled).");
@@ -114,6 +154,8 @@ function handleIncomingData(text) {
         // Reset if starting a new file
         if (currentChunk === 1) {
             receivedChunks = [];
+        if (recvStatus) recvStatus.textContent = "Status: Idle";
+        if (recvProgress) recvProgress.style.width = "0%";
             totalExpectedChunks = totalChunks;
         }
         
@@ -122,8 +164,13 @@ function handleIncomingData(text) {
         
         // Check if file is completely reassembled
         let receivedCount = receivedChunks.filter(c => c !== undefined).length;
+        
+        if (recvStatus) recvStatus.textContent = `Status: Receiving chunk ${currentChunk}/${totalChunks}`;
+        if (recvProgress) recvProgress.style.width = `${(receivedCount / totalExpectedChunks) * 100}%`;
+        
         if (receivedCount === totalExpectedChunks && totalExpectedChunks > 0) {
             log("All chunks received! Reassembling file...");
+            if (recvStatus) recvStatus.textContent = "Status: Reassembling File...";
             reassembleFile();
         }
     } else {
@@ -164,6 +211,8 @@ function reassembleFile() {
         
         // Reset state for next file
         receivedChunks = [];
+        if (recvStatus) recvStatus.textContent = "Status: Idle";
+        if (recvProgress) recvProgress.style.width = "0%";
         totalExpectedChunks = 0;
         
     } catch (err) {
@@ -172,14 +221,31 @@ function reassembleFile() {
 }
 
 // Simple Send Implementation (Optional for client-side sending)
-sendBtn.addEventListener('click', () => {
-    if (!ggwaveInstance || !ggwaveModule) { log("Please start audio first!"); return; }
+sendBtn.addEventListener('click', async () => {
+    if (!ggwaveInstance || !ggwaveModule) { 
+        log("Please start audio first!"); 
+        if (sendStatus) sendStatus.textContent = "Error: Start Microphone First";
+        return; 
+    }
     const text = textInput.value;
     if (text) {
         log(`Sending text: ${text}`);
+        if (sendStatus) sendStatus.textContent = "Status: Encoding data...";
+        
         // Encode as GGWAVE_PROTOCOL_AUDIBLE_FAST (1)
         const waveformData = ggwaveModule.encode(text, 1, 10, ggwaveInstance, 1);
         if (waveformData) {
+            if (sendStatus) sendStatus.textContent = "Status: Transmitting via Speaker...";
+            
+            // Handle specific speaker routing
+            if (speakerSelect && speakerSelect.value && audioContext.setSinkId) {
+                try {
+                    await audioContext.setSinkId(speakerSelect.value);
+                } catch (err) {
+                    log("setSinkId failed: " + err);
+                }
+            }
+            
             // Play out via AudioBufferSourceNode
             const audioBuffer = audioContext.createBuffer(1, waveformData.length, audioContext.sampleRate);
             audioBuffer.getChannelData(0).set(waveformData);
@@ -187,7 +253,15 @@ sendBtn.addEventListener('click', () => {
             source.buffer = audioBuffer;
             source.connect(audioContext.destination);
             source.start();
-            log("Data sent.");
+            
+            // Revert status after duration
+            const duration = (waveformData.length / audioContext.sampleRate) * 1000;
+            setTimeout(() => {
+                log("Data sent.");
+                if (sendStatus) sendStatus.textContent = "Status: Idle";
+            }, duration);
         }
+    } else {
+        if (sendStatus) sendStatus.textContent = "Error: No text to send";
     }
 });

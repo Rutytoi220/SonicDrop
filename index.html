@@ -229,6 +229,82 @@
         #console::-webkit-scrollbar-thumb { background: #334155; border-radius: 12px; }
         #console::-webkit-scrollbar-thumb:hover { background: #475569; }
 
+    
+        /* Device Selectors */
+        .device-panel {
+            background: rgba(30, 41, 59, 0.4);
+            border-radius: 16px;
+            padding: 15px 25px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            border: 1px solid var(--card-border);
+            width: 100%;
+            max-width: 1000px;
+        }
+        
+        .device-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .device-group label {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        select {
+            padding: 10px 15px;
+            border-radius: 8px;
+            background: #1e293b;
+            color: white;
+            border: 1px solid var(--card-border);
+            font-family: "Inter", sans-serif;
+            outline: none;
+            min-width: 250px;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px top 50%;
+            background-size: 12px auto;
+        }
+
+        /* Status & Progress UI */
+        .status-box {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid var(--card-border);
+        }
+
+        .status-text {
+            font-size: 0.95rem;
+            color: var(--accent-blue);
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .progress-bg {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            height: 12px;
+            width: 100%;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, var(--accent-blue), #8b5cf6);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
     </style>
     <script src="ggwave.js"></script>
 </head>
@@ -236,6 +312,22 @@
     <div class="header">
         <h1>SonicDrop Web</h1>
         <p>Acoustic Air-Gapped File Transfer</p>
+    </div>
+
+    
+    <div class="device-panel">
+        <div class="device-group">
+            <label for="mic-select">Microphone</label>
+            <select id="mic-select">
+                <option value="">Default Microphone</option>
+            </select>
+        </div>
+        <div class="device-group">
+            <label for="speaker-select">Speaker</label>
+            <select id="speaker-select">
+                <option value="">Default Speaker</option>
+            </select>
+        </div>
     </div>
 
     <div class="main-container">
@@ -249,6 +341,14 @@
             
             <button id="start-btn">Start Microphone</button>
             
+            
+            <div class="status-box">
+                <span class="status-text" id="recv-status">Status: Idle</span>
+                <div class="progress-bg">
+                    <div class="progress-bar" id="recv-progress"></div>
+                </div>
+            </div>
+
             <div class="console-wrapper">
                 <div class="console-header">
                     <span>Terminal</span>
@@ -278,6 +378,11 @@
             <!-- Text Input -->
             <input type="text" id="text-input" placeholder="Or type a raw message...">
             
+            
+            <div class="status-box" style="margin-bottom: 10px;">
+                <span class="status-text" id="send-status">Status: Idle</span>
+            </div>
+
             <button id="send-btn" disabled>Encode & Transmit</button>
         </div>
 

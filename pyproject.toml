@@ -1,0 +1,23 @@
+[project]
+name = "sound-file-transfer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Rutytoi220", email = "charlesblemontmoyen@hotmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "customtkinter>=6.0.0",
+    "ggwave>=0.4.3",
+    "numpy>=2.5.2",
+    "scipy>=1.18.0",
+    "sounddevice>=0.5.5",
+]
+
+[project.scripts]
+sound-file-transfer = "sound_file_transfer:main"
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"

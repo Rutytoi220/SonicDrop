@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SonicDrop - Browser-based acoustic file transfer using LT Fountain Codes over sound">
+    <title>SonicDrop — Acoustic File Transfer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-row">
+                <svg class="logo-icon" width="36" height="36" viewBox="0 0 36 36" fill="none">
+                    <circle cx="18" cy="18" r="16" stroke="url(#grad)" stroke-width="2" opacity="0.3"/>
+                    <circle cx="18" cy="18" r="10" stroke="url(#grad)" stroke-width="2" opacity="0.5"/>
+                    <circle cx="18" cy="18" r="4" fill="url(#grad)"/>
+                    <defs><linearGradient id="grad" x1="0" y1="0" x2="36" y2="36">
+                        <stop stop-color="#6ee7b7"/><stop offset="1" stop-color="#3b82f6"/>
+                    </linearGradient></defs>
+                </svg>
+                <h1 class="title">SonicDrop</h1>
+            </div>
+            <p class="subtitle">Acoustic file transfer &middot; LT Fountain Codes</p>
+        </header>
+
+        <!-- Device Selectors -->
+        <section class="device-section">
+            <div class="device-picker">
+                <label for="micSelect">Microphone</label>
+                <select id="micSelect"><option>Loading devices…</option></select>
+            </div>
+            <div class="device-picker">
+                <label for="spkSelect">Speaker</label>
+                <select id="spkSelect"><option>Loading devices…</option></select>
+            </div>
+        </section>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button id="listenBtn" class="btn btn-primary" disabled>Start Listening</button>
+            <button id="stopBtn" class="btn btn-danger" disabled>Stop</button>
+            <button id="testBtn" class="btn btn-test" disabled>Test Loopback</button>
+            <div id="statusIndicator" class="status-badge idle">Idle</div>
+        </div>
+
+        <!-- Audio Level -->
+        <div class="level-section">
+            <label>Mic Level</label>
+            <div class="level-track">
+                <div id="levelBar" class="level-fill"></div>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <section class="progress-section">
+            <div class="progress-header">
+                <span>Matrix Rank</span>
+                <span id="progressText">0 %</span>
+            </div>
+            <div class="progress-track">
+                <div id="progressBar" class="progress-fill"></div>
+            </div>
+            <p id="dropletText" class="droplet-counter">0 / 0 droplets</p>
+        </section>
+
+        <!-- Terminal -->
+        <section class="terminal">
+            <div class="terminal-chrome">
+                <span class="dot dot-r"></span>
+                <span class="dot dot-y"></span>
+                <span class="dot dot-g"></span>
+                <span class="terminal-title">console</span>
+            </div>
+            <div id="consoleOutput" class="terminal-body">
+                <p class="log-system">&gt; SonicDrop initialized. Awaiting FSK signal.</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://unpkg.com/ggwave@0.4.0/ggwave.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

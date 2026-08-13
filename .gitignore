@@ -1,0 +1,25 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Scratch and test files
+scratch_*.py
+create_*.py
+patch_*.py
+test_*.py
+mic_test.py
+serve.py
+server.py
+
+# User Data & Artifacts
+*.bin
+*.wav
+*.txt
+settings.json

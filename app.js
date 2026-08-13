@@ -95,7 +95,7 @@ startBtn.addEventListener('click', () => {
             audioProcessor = audioContext.createScriptProcessor(1024, 1, 1);
             
             audioProcessor.onaudioprocess = function(e) {
-                if (!ggwaveInstance || !ggwaveModule) return;
+                if (ggwaveInstance === null || ggwaveModule === null) return;
                 const inputData = e.inputBuffer.getChannelData(0);
                 
                 // ggwave requires Int8Array byte stream representation of Int16 samples
@@ -222,7 +222,7 @@ function reassembleFile() {
 
 // Simple Send Implementation (Optional for client-side sending)
 sendBtn.addEventListener('click', async () => {
-    if (!ggwaveInstance || !ggwaveModule) { 
+    if (ggwaveInstance === null || ggwaveModule === null) { 
         log("Please start audio first!"); 
         if (sendStatus) sendStatus.textContent = "Error: Start Microphone First";
         return; 

@@ -156,19 +156,27 @@ class SonicDropUI(ctk.CTk):
         self.progress_frame.grid(row=2, column=0, pady=(0, 10), sticky="ew")
         self.progress_frame.grid_columnconfigure(0, weight=1)
         
-        self.progress_bar = ctk.CTkProgressBar(self.progress_frame, height=20)
+        self.progress_bar = ctk.CTkProgressBar(self.progress_frame, height=20, progress_color="#4f46e5")
         self.progress_bar.grid(row=0, column=0, sticky="ew")
         self.progress_bar.set(0.0)
         
         self.progress_label = ctk.CTkLabel(self.progress_frame, text="0%", width=40)
         self.progress_label.grid(row=0, column=1, padx=(10, 0))
         
+        # Chunk Matrix Grid
+        self.matrix_frame = ctk.CTkFrame(self.tab_receive, fg_color="#1e293b", height=100)
+        self.matrix_frame.grid(row=3, column=0, pady=(0, 10), sticky="ew")
+        import tkinter
+        self.matrix_canvas = tkinter.Canvas(self.matrix_frame, bg="#1e293b", highlightthickness=0, height=100)
+        self.matrix_canvas.pack(fill="both", expand=True, padx=5, pady=5)
+        self.matrix_squares = {}
+        
         # Console
         self.console = ctk.CTkTextbox(
             self.tab_receive, font=("Consolas", 14), wrap="word", state="disabled",
             fg_color="#1e1e1e", text_color="#00ff00"
         )
-        self.console.grid(row=3, column=0, pady=10, sticky="nsew")
+        self.console.grid(row=4, column=0, pady=10, sticky="nsew")
         
         # Threading and State
         self.log_queue = queue.Queue()
@@ -253,6 +261,7 @@ class SonicDropUI(ctk.CTk):
             
             self.received_chunks.clear()
             self.total_chunks = 0
+            self.matrix_squares.clear()
         except Exception as e:
             self.console.configure(state="normal")
             self.console.insert("end", f"\n\n[ERROR] Failed to save reconstructed file: {e}\n")

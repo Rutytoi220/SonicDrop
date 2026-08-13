@@ -4,6 +4,7 @@ let mediaStream = null;
 let ggwaveModule = null;
 let ggwaveInstance = null;
 let audioProcessor = null;
+let byteAccumulator = new Uint8Array(0);
 let isListening = false;
 let audioSource = null;
 
@@ -169,66 +170,67 @@ startBtn.addEventListener('click', async () => {
     } catch (err) {
         log("Error initializing audio context: " + err);
     }
-});function handleIncomingData(text) {
-    // Regex to match [X/Y]header chunks
-    const regex = /^\[(\d+)\/(\d+)\](.*)/;
-    const match = text.match(regex);
+});function handleIncomingData(byteArray) {
+    if (byteArray.length < 4) return;
     
-    if (match) {
-        const currentChunk = parseInt(match[1]);
-        const totalChunks = parseInt(match[2]);
-        const payloadData = match[3];
-        
-        log(`[Received File Chunk ${currentChunk}/${totalChunks}]`);
-        
-        // Reset if starting a new file
-        if (currentChunk === 1) {
-            receivedChunks = [];
+    // Read 4-byte struct: <HH (chunk_idx, total_chunks)
+    const dv = new DataView(byteArray.buffer, byteArray.byteOffset, byteArray.byteLength);
+    const chunkIdx = dv.getUint16(0, true);
+    const totalChunks = dv.getUint16(2, true);
+    const payloadData = byteArray.slice(4);
+    
+    if (totalChunks <= 0 || chunkIdx >= totalChunks) return;
+    
+    log(`[Received File Chunk ${chunkIdx+1}/${totalChunks}]`);
+    
+    if (totalExpectedChunks !== totalChunks) {
+        receivedChunks = [];
         if (recvStatus) recvStatus.textContent = "Status: Idle";
         if (recvProgress) recvProgress.style.width = "0%";
-            totalExpectedChunks = totalChunks;
-        }
-        
-        // Store chunk in array (0-indexed)
-        receivedChunks[currentChunk - 1] = payloadData;
-        
-        // Check if file is completely reassembled
-        let receivedCount = receivedChunks.filter(c => c !== undefined).length;
-        
-        if (recvStatus) recvStatus.textContent = `Status: Receiving chunk ${currentChunk}/${totalChunks}`;
-        if (recvProgress) recvProgress.style.width = `${(receivedCount / totalExpectedChunks) * 100}%`;
-        
-        if (receivedCount === totalExpectedChunks && totalExpectedChunks > 0) {
-            log("All chunks received! Reassembling file...");
-            if (recvStatus) recvStatus.textContent = "Status: Reassembling File...";
-            reassembleFile();
-        }
-    } else {
-        log("Received string: " + text);
+        totalExpectedChunks = totalChunks;
+    }
+    
+    receivedChunks[chunkIdx] = payloadData;
+    
+    let receivedCount = receivedChunks.filter(c => c !== undefined).length;
+    
+    if (recvStatus) recvStatus.textContent = `Status: Receiving chunk ${receivedCount}/${totalChunks}`;
+    if (recvProgress) recvProgress.style.width = `${(receivedCount / totalExpectedChunks) * 100}%`;
+    
+    if (receivedCount === totalExpectedChunks && totalExpectedChunks > 0) {
+        log("All chunks received! Reassembling file...");
+        if (recvStatus) recvStatus.textContent = "Status: Reassembling File...";
+        reassembleFile();
     }
 }
 
-function reassembleFile() {
+async function reassembleFile() {
     try {
-        const base64Data = receivedChunks.join("");
-        log(`Base64 concatenated length: ${base64Data.length}`);
-        
-        // Decode base64 to binary
-        const binaryString = atob(base64Data);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
+        let totalLen = 0;
+        for (let c of receivedChunks) totalLen += c.length;
+        const compressedBytes = new Uint8Array(totalLen);
+        let offset = 0;
+        for (let c of receivedChunks) {
+            compressedBytes.set(c, offset);
+            offset += c.length;
         }
         
-        const blob = new Blob([bytes], {type: "application/octet-stream"});
-        const url = URL.createObjectURL(blob);
+        log(`Compressed payload length: ${compressedBytes.length}`);
         
-        // Trigger automatic file download
+        // Decompress using Web DecompressionStream (zlib/deflate)
+        const ds = new DecompressionStream("deflate");
+        const rs = new Response(compressedBytes);
+        const decompressedStream = rs.body.pipeThrough(ds);
+        const decompressedResponse = new Response(decompressedStream);
+        const decompressedBlob = await decompressedResponse.blob();
+        
+        log(`Decompressed length: ${decompressedBlob.size}`);
+        
+        const url = URL.createObjectURL(decompressedBlob);
         const a = document.createElement("a");
         a.style.display = "none";
         a.href = url;
-        a.download = "received_file_ggwave";
+        a.download = "received_file_ggwave.bin";
         document.body.appendChild(a);
         a.click();
         
@@ -239,7 +241,6 @@ function reassembleFile() {
             document.body.removeChild(a);
         }, 500);
         
-        // Reset state for next file
         receivedChunks = [];
         if (recvStatus) recvStatus.textContent = "Status: Idle";
         if (recvProgress) recvProgress.style.width = "0%";

@@ -92,6 +92,9 @@ startBtn.addEventListener('click', async () => {
         try {
             ggwaveModule = await ggwave_factory();
             const parameters = ggwaveModule.getDefaultParameters();
+            parameters.sampleFormatInp = 4; // GGWAVE_SAMPLE_FORMAT_I16
+            parameters.sampleFormatOut = 4;
+            parameters.sampleRateInp = 48000;
             ggwaveInstance = ggwaveModule.init(parameters); // Initialize the C++ instance
         } catch (err) {
             log("WASM Load Error: " + err);

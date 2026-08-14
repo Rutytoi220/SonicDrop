@@ -24,7 +24,7 @@ const sendStatus = document.getElementById("send-status");
 async function populateDevices() {
     try {
         // Request permission first
-        const devices = await navigator.mediaDevices.enumerateDevices();
+        const devices = await navigator.mediaDevices.populateDevices();
         
         micSelect.innerHTML = "<option value=''>Default Microphone</option>";
         speakerSelect.innerHTML = "<option value=''>Default Speaker</option>";
@@ -133,7 +133,7 @@ startBtn.addEventListener('click', async () => {
         log("Microphone access granted (Hardware filters explicitly disabled).");
         
         // Repopulate device list with proper labels now that permission is explicitly granted
-        enumerateDevices();
+        populateDevices();
         
         audioSource = audioContext.createMediaStreamSource(mediaStream);
         

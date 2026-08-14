@@ -107,7 +107,7 @@ startBtn.addEventListener('click', async () => {
         if (!audioContext) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             audioContext = new AudioContext({ sampleRate: 48000 });
-            log(`AudioContext created (Sample Rate: ${audioContext.sampleRate}Hx)`);
+            log(`AudioContext created (Sample Rate: ${audioContext.sampleRate}Hz)`);
         }
         
         // [CRITICAL] Hardware Constraints for iOS
@@ -131,29 +131,37 @@ startBtn.addEventListener('click', async () => {
         if (!audioProcessor) {
             audioProcessor = audioContext.createScriptProcessor(1024, 1, 1);
             
+            let frameCounter = 0;
             audioProcessor.onaudioprocess = function(e) {
                 if (ggwaveInstance === null || ggwaveModule === null || !isListening) return;
                 const inputData = e.inputBuffer.getChannelData(0);
                 
-                // ggwave requires Int8Array byte stream representation of Int16 samples
-                const pcm16 = new Int16Array(inputData.length);
-                for (let i = 0; i < inputData.length; i++) {
-                    pcm16[i] = Math.max(-32768, Math.min(32767, Math.floor(inputData[i] * 32768)));
+                let maxVol = 0;
+                for(let i=0; i<inputData.length; i++) maxVol = Math.max(maxVol, Math.abs(inputData[i]));
+                
+                frameCounter++;
+                if (frameCounter >= 20) {
+                    console.log("Mic Vol: " + maxVol.toFixed(4));
+                    frameCounter = 0;
                 }
                 
-                const pcm8 = new Int8Array(pcm16.buffer);
+                const micLevelBar = document.getElementById("mic-level-bar");
+                if (micLevelBar) {
+                    let pct = Math.min(maxVol * 300, 100);
+                    micLevelBar.style.width = pct + "%";
+                }
                 
-                // Decode acoustic payload using the module object
-                const res = ggwaveModule.decode(ggwaveInstance, pcm8);
+                const res = ggwaveModule.decode(ggwaveInstance, new Int8Array(inputData.buffer));
                 
                 if (res && res.length > 0) {
-                    let text = "";
-                    if (typeof res === 'string') {
-                        text = res;
+                    let byteArray;
+                    if (typeof res === "string") {
+                        byteArray = new Uint8Array(res.length);
+                        for (let j = 0; j < res.length; j++) byteArray[j] = res.charCodeAt(j);
                     } else {
-                        text = new TextDecoder("utf-8").decode(res);
+                        byteArray = new Uint8Array(res);
                     }
-                    handleIncomingData(text);
+                    handleIncomingData(byteArray);
                 }
             };
         }

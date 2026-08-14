@@ -114,7 +114,7 @@ startBtn.addEventListener('click', async () => {
         try {
             ggwaveModule = await ggwave_factory();
             const parameters = ggwaveModule.getDefaultParameters();
-            parameters.sampleFormatInp = 4; // GGWAVE_SAMPLE_FORMAT_I16
+            parameters.sampleFormatInp = ggwaveModule.SampleFormat.GGWAVE_SAMPLE_FORMAT_I16;
             parameters.sampleRateInp = 48000;
             ggwaveInstance = ggwaveModule.init(parameters); // Initialize the C++ instance
         } catch (err) {
@@ -355,7 +355,7 @@ sendBtn.addEventListener('click', async () => {
         if (sendStatus) sendStatus.textContent = "Status: Encoding data...";
         
         // Encode as GGWAVE_PROTOCOL_AUDIBLE_FAST (1)
-        const waveformData = ggwaveModule.encode(text, 1, 10, ggwaveInstance, 1);
+        const waveformData = ggwaveModule.encode(ggwaveInstance, text, ggwaveModule.ProtocolId.GGWAVE_PROTOCOL_AUDIBLE_FAST, 10);
         if (waveformData) {
             if (sendStatus) sendStatus.textContent = "Status: Transmitting via Speaker...";
             

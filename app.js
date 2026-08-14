@@ -60,6 +60,7 @@ let receivedChunks = [];
         if (recvStatus) recvStatus.textContent = "Status: Idle";
         if (recvProgress) recvProgress.style.width = "0%";
 let totalExpectedChunks = 0;
+let selectedFile = null;
 
 startBtn.addEventListener('click', async () => {
     if (isListening) {
@@ -185,7 +186,7 @@ startBtn.addEventListener('click', async () => {
         startBtn.textContent = "Stop Microphone";
         startBtn.style.background = "#ef4444"; // Red color for stop
         startBtn.classList.add("pulse-active");
-        sendBtn.disabled = false;
+        // sendBtn.disabled = false;
         
     } catch (err) {
         log("Error initializing audio context: " + err);
@@ -269,6 +270,32 @@ async function reassembleFile() {
     } catch (err) {
         log("Error during file reassembly: " + err);
     }
+}
+
+// Form Validation Logic
+function validateSendForm() {
+    if ((textInput && textInput.value.trim().length > 0) || selectedFile) {
+        sendBtn.disabled = false;
+    } else {
+        sendBtn.disabled = true;
+    }
+}
+
+if (textInput) {
+    textInput.addEventListener("input", validateSendForm);
+}
+
+const fileInput = document.getElementById("file-input");
+const fileNameDisplay = document.getElementById("file-name-display");
+
+if (fileInput) {
+    fileInput.addEventListener("change", function(e) {
+        selectedFile = e.target.files[0] ? e.target.files[0] : null;
+        if (fileNameDisplay) {
+            fileNameDisplay.textContent = selectedFile ? selectedFile.name : "No file selected (Max 2MB)";
+        }
+        validateSendForm();
+    });
 }
 
 // Simple Send Implementation (Optional for client-side sending)

@@ -23,7 +23,7 @@ const sendStatus = document.getElementById("send-status");
 // Enumerate devices on load
 async function populateDevices() {
     try {
-        await navigator.mediaDevices.getUserMedia({ audio: true }); // Request permission first
+        // Request permission first
         const devices = await navigator.mediaDevices.enumerateDevices();
         
         micSelect.innerHTML = "<option value=''>Default Microphone</option>";
@@ -123,7 +123,13 @@ startBtn.addEventListener('click', async () => {
             constraints.audio.deviceId = { exact: micSelect.value };
         }
         
-        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (err) {
+            log("Failed with specific device (" + err + "), falling back to default...");
+            delete constraints.audio.deviceId;
+            mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        }
         log("Microphone access granted (Hardware filters explicitly disabled).");
         
         // Repopulate device list with proper labels now that permission is explicitly granted

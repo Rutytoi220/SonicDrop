@@ -294,7 +294,6 @@ if (textInput) {
     textInput.addEventListener("input", validateSendForm);
 }
 
-const fileInput = document.getElementById("file-input");
 const fileNameDisplay = document.getElementById("file-name-display");
 
 if (fileInput) {

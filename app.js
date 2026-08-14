@@ -22,26 +22,32 @@ const sendStatus = document.getElementById("send-status");
 
 // Enumerate devices on load
 async function populateDevices() {
+    log("Running populateDevices...");
     try {
-        // Request permission first
-        const devices = await navigator.mediaDevices.populateDevices();
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+            log("navigator.mediaDevices.enumerateDevices is unsupported.");
+            return;
+        }
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        log(`Found ${devices.length} devices.`);
         
         micSelect.innerHTML = "<option value=''>Default Microphone</option>";
         speakerSelect.innerHTML = "<option value=''>Default Speaker</option>";
         
         devices.forEach(device => {
-            if (device.kind === "audioinput") {
+            if (device.kind === "audioinput" && device.deviceId !== "default" && device.deviceId !== "communications") {
                 const opt = document.createElement("option");
                 opt.value = device.deviceId;
                 opt.text = device.label || `Microphone ${micSelect.length}`;
                 micSelect.appendChild(opt);
-            } else if (device.kind === "audiooutput") {
+            } else if (device.kind === "audiooutput" && device.deviceId !== "default" && device.deviceId !== "communications") {
                 const opt = document.createElement("option");
                 opt.value = device.deviceId;
                 opt.text = device.label || `Speaker ${speakerSelect.length}`;
                 speakerSelect.appendChild(opt);
             }
         });
+        log(`Mic options: ${micSelect.length}, Speaker options: ${speakerSelect.length}`);
     } catch (err) {
         log("Failed to enumerate devices: " + err);
     }

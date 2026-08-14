@@ -54,6 +54,21 @@ async function populateDevices() {
 }
 populateDevices();
 
+let permissionGranted = false;
+micSelect.addEventListener("mousedown", async (e) => {
+    if (!permissionGranted) {
+        log("Dropdown clicked: Requesting microphone permission to reveal all devices...");
+        try {
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+            permissionGranted = true;
+            await populateDevices();
+        } catch (err) {
+            log("Permission denied. Browser will hide hardware list.");
+        }
+    }
+});
+
+
 
 function log(msg) {
     console.log(msg);
@@ -140,6 +155,21 @@ startBtn.addEventListener('click', async () => {
         
         // Repopulate device list with proper labels now that permission is explicitly granted
         populateDevices();
+
+let permissionGranted = false;
+micSelect.addEventListener("mousedown", async (e) => {
+    if (!permissionGranted) {
+        log("Dropdown clicked: Requesting microphone permission to reveal all devices...");
+        try {
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+            permissionGranted = true;
+            await populateDevices();
+        } catch (err) {
+            log("Permission denied. Browser will hide hardware list.");
+        }
+    }
+});
+
         
         audioSource = audioContext.createMediaStreamSource(mediaStream);
         

@@ -126,6 +126,9 @@ startBtn.addEventListener('click', async () => {
         mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
         log("Microphone access granted (Hardware filters explicitly disabled).");
         
+        // Repopulate device list with proper labels now that permission is explicitly granted
+        enumerateDevices();
+        
         audioSource = audioContext.createMediaStreamSource(mediaStream);
         
         // ScriptProcessorNode for parsing audio chunks

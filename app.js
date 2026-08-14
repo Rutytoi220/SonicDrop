@@ -114,7 +114,8 @@ startBtn.addEventListener('click', async () => {
         try {
             ggwaveModule = await ggwave_factory();
             const parameters = ggwaveModule.getDefaultParameters();
-            parameters.sampleFormatInp = ggwaveModule.SampleFormat.GGWAVE_SAMPLE_FORMAT_I16;
+            parameters.sampleFormatInp = ggwaveModule.SampleFormat.GGWAVE_SAMPLE_FORMAT_F32;
+            parameters.sampleFormatOut = ggwaveModule.SampleFormat.GGWAVE_SAMPLE_FORMAT_F32;
             parameters.sampleRateInp = 48000;
             ggwaveInstance = ggwaveModule.init(parameters); // Initialize the C++ instance
         } catch (err) {
@@ -197,11 +198,8 @@ micSelect.addEventListener("mousedown", async (e) => {
                     micLevelBar.style.width = pct + "%";
                 }
                 
-                const pcm16 = new Int16Array(inputData.length);
-                for (let i = 0; i < inputData.length; i++) {
-                    pcm16[i] = Math.max(-32768, Math.min(32767, Math.floor(inputData[i] * 32768)));
-                }
-                const res = ggwaveModule.decode(ggwaveInstance, new Int8Array(pcm16.buffer));
+                // Pass native Float32Array directly (wrapped in Int8Array to satisfy Emscripten HEAP8 byte-length allocation)
+                const res = ggwaveModule.decode(ggwaveInstance, new Int8Array(inputData.buffer));
                 
                 if (res && res.length > 0) {
                     console.log(">>> DECODER CAUGHT DATA! Type:", typeof res, "| Length:", res.length, "| Data:", res);

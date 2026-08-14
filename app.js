@@ -4,7 +4,7 @@ let mediaStream = null;
 let ggwaveModule = null;
 let ggwaveInstance = null;
 let audioProcessor = null;
-let byteAccumulator = new Uint8Array(0);
+
 let isListening = false;
 let audioSource = null;
 
@@ -92,8 +92,7 @@ startBtn.addEventListener('click', async () => {
         try {
             ggwaveModule = await ggwave_factory();
             const parameters = ggwaveModule.getDefaultParameters();
-            parameters.sampleFormatInp = 4; // GGWAVE_SAMPLE_FORMAT_I16
-            parameters.sampleFormatOut = 4;
+            parameters.sampleFormatInp = 5; // GGWAVE_SAMPLE_FORMAT_F32
             parameters.sampleRateInp = 48000;
             ggwaveInstance = ggwaveModule.init(parameters); // Initialize the C++ instance
         } catch (err) {
@@ -162,6 +161,11 @@ startBtn.addEventListener('click', async () => {
         audioSource.connect(audioProcessor);
         // Connect processor to destination (required for Safari to fire onaudioprocess events)
         audioProcessor.connect(audioContext.destination);
+        
+        if (audioContext.state === "suspended") {
+            await audioContext.resume();
+        }
+        log("AudioContext state: " + audioContext.state);
         
         isListening = true;
         log("Listening for incoming acoustic data...");

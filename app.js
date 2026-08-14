@@ -154,6 +154,7 @@ startBtn.addEventListener('click', async () => {
                 const res = ggwaveModule.decode(ggwaveInstance, new Int8Array(inputData.buffer));
                 
                 if (res && res.length > 0) {
+                    console.log(">>> DECODER CAUGHT DATA! Type:", typeof res, "| Length:", res.length, "| Data:", res);
                     let byteArray;
                     if (typeof res === "string") {
                         byteArray = new Uint8Array(res.length);
